@@ -2,6 +2,7 @@
 
 import json
 import requests
+import sqlite3
 from lxml import html
 from utils import log
 
@@ -26,6 +27,25 @@ class House(Model):
         self.position = ''
 
 
+def sql_init():
+    conn = sqlite3.connect('data.db')
+    log('initiate sql-database successfully')
+    conn.execute(
+        '''CREATE TABLE houses
+        (ID INTEGER PRIMARY KEY NOT NULL,
+        TITLE TEXT NOT NULL,
+        RENT TEXT NOT NULL,
+        SITUATION TEXT NOT NULL,
+        SIZE TEXT NOT NULL,
+        POSITION TEXT NOT NULL
+        )'''
+    )
+    log('table created')
+    conn.close()
+
+
+
+
 def house_from_div(div):
     rel_href = div.xpath('.//a[@class="list-info-title js-title"]/@href')[0]
     # 应对复杂链接
@@ -37,8 +57,11 @@ def house_from_div(div):
     item_page = requests.get(abs_href)
     item_div = html.fromstring(item_page.content)
     house = House()
-    title = item_div.xpath('.//div[@class="col-cont title-box"]/h1')[0].text
-    if title is None:
+    try:
+        title = item_div.xpath('.//div[@class="col-cont title-box"]/h1')[0].text
+        if title is None:
+            title = '无标题'
+    except IndexError as e:
         title = '无标题'
     house.title = title
     house.rent = item_div.xpath('.//b[@class="basic-info-price fl"]')[0].text
@@ -68,15 +91,12 @@ def houses_from_url(url):
 
 
 def main():
-    url = 'http://bj.ganji.com/fang1/b2000e5000/'
-    all_houses = []
+    url = 'http://bj.ganji.com/fang1/b3000e5000/'
     while True:
         houses, abs_next_page_url = houses_from_url(url)
-        all_houses += houses
         if abs_next_page_url == 'over':
             break
         url = abs_next_page_url
-    log(all_houses[:20])
 
     # houses.sort(key=lambda m: m.rating)
     # for house in houses:
@@ -85,3 +105,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # sql_init()
