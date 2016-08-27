@@ -6,7 +6,6 @@ import sqlite3
 from lxml import html
 from utils import log
 
-
 __author__ = 'hua'
 
 
@@ -44,6 +43,20 @@ def sql_init():
     conn.close()
 
 
+def test_sql():
+    conn = sqlite3.connect('data.db')
+    # conn.execute(
+    #     '''INSERT INTO houses(TITLE, RENT, SITUATION, SIZE, POSITION)
+    #     VALUES ('nothing to show', '2000', '便利的环境', '80m2', '120,32')'''
+    # )
+    conn.execute(
+        '''
+        DELETE FROM houses WHERE ID=1
+        '''
+    )
+    conn.commit()
+    conn.close()
+    log('操作数据库成功')
 
 
 def house_from_div(div):
@@ -98,11 +111,11 @@ def main():
             break
         url = abs_next_page_url
 
-    # houses.sort(key=lambda m: m.rating)
-    # for house in houses:
-    #     log(house)
-
 
 if __name__ == '__main__':
     main()
     # sql_init()
+    # test_sql()
+
+# TODO list
+# 写入数据库
