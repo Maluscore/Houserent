@@ -8,6 +8,8 @@ from utils import log
 
 __author__ = 'hua'
 
+id_data = 1
+
 
 class Model(object):
     def __str__(self):
@@ -45,15 +47,13 @@ def sql_init():
 
 def test_sql():
     conn = sqlite3.connect('data.db')
+    # test_data = [(1, 'nothing to show', '2000', '便利的环境', '80m2', '120,32'),]
+    # conn.executemany('INSERT INTO houses VALUES (?,?,?,?,?,?)', test_data)
     # conn.execute(
-    #     '''INSERT INTO houses(TITLE, RENT, SITUATION, SIZE, POSITION)
-    #     VALUES ('nothing to show', '2000', '便利的环境', '80m2', '120,32')'''
+    #     '''
+    #     DELETE FROM houses WHERE ID=1
+    #     '''
     # )
-    conn.execute(
-        '''
-        DELETE FROM houses WHERE ID=1
-        '''
-    )
     conn.commit()
     conn.close()
     log('操作数据库成功')
@@ -78,7 +78,7 @@ def house_from_div(div):
         title = '无标题'
     house.title = title
     house.rent = item_div.xpath('.//b[@class="basic-info-price fl"]')[0].text
-    house.situation = item_div.xpath('.//ul[@class="basic-info-ul"]/li/text()')[4]
+    house.situation = item_div.xpath('.//ul[@class="basic-info-ul"]/li/text()')[4].lstrip()
     house.size = item_div.xpath('.//ul[@class="basic-info-ul"]/li/text()')[3].lstrip()
     try:
         geography = item_div.xpath('//div[@id="map_load"]/@data-ref')[0]
@@ -94,19 +94,29 @@ def houses_from_url(url):
     root = html.fromstring(page.content)
     house_divs = root.xpath('//li[@class="list-img clearfix"]')
     # log(house_divs)
-    houses = [house_from_div(div) for div in house_divs]
+    # houses = [house_from_div(div) for div in house_divs]
+    for div in house_divs:
+        s_h = house_from_div(div)
+        conn = sqlite3.connect('data.db')
+        global id_data
+        single_house_info = [(id_data, s_h.title, s_h.rent, s_h.situation, s_h.size, s_h.position),]
+        conn.executemany('INSERT INTO houses VALUES (?,?,?,?,?,?)', single_house_info)
+        conn.commit()
+        conn.close()
+        log('成功插入{}条数据'.format(id_data))
+        id_data += 1
     try:
         next_page_url = root.xpath('//ul[@class="pageLink clearfix"]//a[@class="next"]/@href')[0]
         abs_next_page_url = 'http://bj.ganji.com' + next_page_url
     except IndexError as e:
         abs_next_page_url = 'over'
-    return houses, abs_next_page_url
+    return abs_next_page_url
 
 
 def main():
     url = 'http://bj.ganji.com/fang1/b3000e5000/'
     while True:
-        houses, abs_next_page_url = houses_from_url(url)
+        abs_next_page_url = houses_from_url(url)
         if abs_next_page_url == 'over':
             break
         url = abs_next_page_url
