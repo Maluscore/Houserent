@@ -26,6 +26,7 @@ class House(Model):
         self.situation = ''
         self.size = ''
         self.position = ''
+        self.href = ''
 
 
 def sql_init():
@@ -38,7 +39,8 @@ def sql_init():
         RENT TEXT NOT NULL,
         SITUATION TEXT NOT NULL,
         SIZE TEXT NOT NULL,
-        POSITION TEXT NOT NULL
+        POSITION TEXT NOT NULL,
+        HREF TEXT NOT NULL
         )'''
     )
     log('table created')
@@ -67,25 +69,27 @@ def house_from_div(div):
     else:
         abs_href = rel_href
     log(abs_href)
-    item_page = requests.get(abs_href)
-    item_div = html.fromstring(item_page.content)
     house = House()
-    try:
-        title = item_div.xpath('.//div[@class="col-cont title-box"]/h1')[0].text
-        if title is None:
+    item_page = requests.get(abs_href)
+    if item_page.status_code == 200:
+        item_div = html.fromstring(item_page.content)
+        house.href = abs_href
+        try:
+            title = item_div.xpath('.//div[@class="col-cont title-box"]/h1')[0].text
+            if title is None:
+                title = '无标题'
+        except IndexError as e:
             title = '无标题'
-    except IndexError as e:
-        title = '无标题'
-    house.title = title
-    house.rent = item_div.xpath('.//b[@class="basic-info-price fl"]')[0].text
-    house.situation = item_div.xpath('.//ul[@class="basic-info-ul"]/li/text()')[4].lstrip()
-    house.size = item_div.xpath('.//ul[@class="basic-info-ul"]/li/text()')[3].lstrip()
-    try:
-        geography = item_div.xpath('//div[@id="map_load"]/@data-ref')[0]
-        geography_dict = json.loads(geography)
-        house.position = geography_dict.get('lnglat')
-    except IndexError as e:
-        house.position = 'negative'
+        house.title = title
+        house.rent = item_div.xpath('.//b[@class="basic-info-price fl"]')[0].text
+        house.situation = item_div.xpath('.//ul[@class="basic-info-ul"]/li/text()')[4].lstrip()
+        house.size = item_div.xpath('.//ul[@class="basic-info-ul"]/li/text()')[3].lstrip()
+        try:
+            geography = item_div.xpath('//div[@id="map_load"]/@data-ref')[0]
+            geography_dict = json.loads(geography)
+            house.position = geography_dict.get('lnglat')
+        except IndexError as e:
+            house.position = 'negative'
     return house
 
 
@@ -97,10 +101,13 @@ def houses_from_url(url):
     # houses = [house_from_div(div) for div in house_divs]
     for div in house_divs:
         s_h = house_from_div(div)
+        if s_h.title == '':
+            continue
         conn = sqlite3.connect('data.db')
         global id_data
-        single_house_info = [(id_data, s_h.title, s_h.rent, s_h.situation, s_h.size, s_h.position),]
-        conn.executemany('INSERT INTO houses VALUES (?,?,?,?,?,?)', single_house_info)
+        single_house_info = [(id_data, s_h.title, s_h.rent, s_h.situation,
+                              s_h.size, s_h.position, s_h.href),]
+        conn.executemany('INSERT INTO houses VALUES (?,?,?,?,?,?,?)', single_house_info)
         conn.commit()
         conn.close()
         log('成功插入{}条数据'.format(id_data))
