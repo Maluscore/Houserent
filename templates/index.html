@@ -315,8 +315,13 @@
             var response = function (r) {
                 delRentLocation();
                 var rent_locations = new Set();
-                for (var d in r) {
-                    rent_locations.add(d.address);
+                log('rrr', r);
+                // 对于数组的循环是i表示下标
+                for (var i in r) {
+                    if(!r.hasOwnProperty(i)) continue;
+                    log('ddd', i);
+                    rent_locations.add(r[i].address);
+                    log('rent_location:', rent_locations);
                 }
                 rent_locations.forEach(function (address, index) {
                     addMarkerByAddress(address);
