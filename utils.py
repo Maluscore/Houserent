@@ -8,3 +8,10 @@ def log(*args, **kwargs):
     value = time.localtime(int(time.time()))
     dt = time.strftime(format, value)
     print(dt, *args, **kwargs)
+
+def total_digit(data):
+    try:
+        numb = int(data)
+        return numb > 0
+    except ValueError as e:
+        return False
