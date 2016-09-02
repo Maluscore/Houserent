@@ -170,7 +170,7 @@
             });
         }
 
-        function addMarkerByAddress(address) {
+        function addMarkerByAddress(address, href) {
             var geocoder = new AMap.Geocoder({
                 city: "北京",
                 radius: 1000
@@ -186,7 +186,7 @@
                     });
                     rentMarkerArray.push(rentMarker);
 
-                    rentMarker.content = "<div>房源：<a target = '_blank' href='http://bj.58.com/pinpaigongyu/?key=" + address + "'>" + address + "</a><div>"
+                    rentMarker.content = "<div>房源：<a target = '_blank' href='http://bj.58.com" + href + "'>" + address + "</a><div>";
                     rentMarker.on('click', function(e) {
                         infoWindow.setContent(e.target.content);
                         infoWindow.open(map, e.target.getPosition());
@@ -326,17 +326,21 @@
             var response = function (r) {
                 delRentLocation();
                 var rent_locations = new Set();
+                var rent_hrefs = new Set();
                 log('rrr', r);
                 // 对于数组的循环是i表示下标
                 for (var i in r) {
                     if(!r.hasOwnProperty(i)) continue;
                     log('ddd', i);
-                    rent_locations.add(r[i].address);
+//                    rent_locations.add(r[i].address);
+//                    rent_hrefs.add(r[i].href);
+                    addMarkerByAddress(r[i].address, r[i].href);
                     log('rent_location:', rent_locations);
                 }
-                rent_locations.forEach(function (address, index) {
-                    addMarkerByAddress(address);
-                });
+
+//                rent_locations.forEach(function (address, index) {
+//                    addMarkerByAddress(address);
+//                });
             };
             lbsMap.load(form, response);
         };
